@@ -9,10 +9,12 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using FileAdmiral.Engine.Annotations;
+using System.Runtime.InteropServices;
+using ReadEnvSample;
 
 namespace FileAdmiral.Engine.ViewModels
 {
-    public class CommandPromptViewModel : INotifyPropertyChanged
+    public class CommandPromptViewModel : INotifyPropertyChanged, FileAdmiral.Engine.ViewModels.ICommandShellViewModel
     {
         private const int CAPACITY = 200;
         private readonly Process _process;
@@ -35,38 +37,35 @@ namespace FileAdmiral.Engine.ViewModels
             _process.OutputDataReceived += ProcessOnOutputDataReceived;
             _process.Start();
             _process.BeginOutputReadLine();
-            SendCommand("echo setPrompt %CD%&&REM FA_CMD", false);
+
+            UpdatePrompt();
+
 
         }
+        private void UpdatePrompt()
+        {
+            _process.CancelOutputRead();
+            SendCommand("set FA_CD=%CD%");
+            _process.BeginOutputReadLine();
 
+
+
+            var envars = _process.TryReadEnvironmentVariables();
+            if(envars!=null)
+                Prompt = envars["FA_CD"] + ">";
+
+        }
         private void ProcessOnOutputDataReceived(object sender, DataReceivedEventArgs e)
         {
+            string data = e.Data;
+            UpdatePrompt();
             
-            if (e.Data.Contains("FA_CMD"))
-            {
-                return;
-            }
-            if (e.Data.Contains("setPrompt"))
-            {
 
-                Prompt = e.Data.Substring(e.Data.IndexOf("setPrompt ") + 10) + "> ";
-                return;
-            }
-
-            //if (e.Data == FolderPath + ">" +  _lastCommand)
-            //{
-            //    SendCommand("echo setPrompt %CD%&&REM FA_CMD", false);
-            //}
-            if (_lastInputWasMine && e.Data.Contains(">"))
-            {
-                _lastInputWasMine = false;
-                //Prompt = e.Data.Substring(0, e.Data.IndexOf(">") + 1);
-            }
             if (_stdOut.Count == CAPACITY)
             {
                 _stdOut.Dequeue();
             }
-            _stdOut.Enqueue(e.Data);
+            _stdOut.Enqueue(data);
             if (PropertyChanged != null)
             {
                 PropertyChanged(this, new PropertyChangedEventArgs("StandardOut"));
@@ -103,6 +102,7 @@ namespace FileAdmiral.Engine.ViewModels
             _process.StandardInput.WriteLine(command);
         }
 
+        private const string SETPATH = "set FA_CD=%CD%";
         public string FolderPath { get; private set; }
 
         //private StringBuilder _stdOut = new StringBuilder();

@@ -26,7 +26,7 @@ namespace FileAdmiral
             InitializeComponent();
             try
             {
-                CommandPromptViewModel cpvm = new CommandPromptViewModel("C:\\");
+                PowerShellViewModel cpvm = new PowerShellViewModel("C:\\");
                 DataContext = cpvm;
             }
             catch (Exception ex)
@@ -40,7 +40,7 @@ namespace FileAdmiral
         {
             if (e.Key == Key.Return)
             {
-                ((CommandPromptViewModel)DataContext).SendCommand(CommandInput.Text);
+                ((PowerShellViewModel)DataContext).SendCommand(CommandInput.Text);
                 CommandInput.Text = "";
             }
         }
