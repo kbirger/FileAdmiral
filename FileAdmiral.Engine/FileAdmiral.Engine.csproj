@@ -44,6 +44,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CircularBuffer.cs" />
+    <Compile Include="Extensions.cs" />
     <Compile Include="Properties\Annotations.cs" />
     <Compile Include="readpeb.cs" />
     <Compile Include="ViewModels\CommandPromptViewModel.cs" />

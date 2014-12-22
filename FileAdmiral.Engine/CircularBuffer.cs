@@ -42,5 +42,16 @@ namespace FileAdmiral.Engine
         {
             return _queue.GetEnumerator();
         }
+
+        /// <summary>
+        /// Returns a string that represents the current object.
+        /// </summary>
+        /// <returns>
+        /// A string that represents the current object.
+        /// </returns>
+        public override string ToString()
+        {
+            return string.Join("\n", this);
+        }
     }
 }

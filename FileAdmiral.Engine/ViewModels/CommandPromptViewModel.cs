@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
@@ -9,16 +9,14 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using FileAdmiral.Engine.Annotations;
-using System.Runtime.InteropServices;
-using ReadEnvSample;
 
 namespace FileAdmiral.Engine.ViewModels
 {
-    public class CommandPromptViewModel : INotifyPropertyChanged, FileAdmiral.Engine.ViewModels.ICommandShellViewModel
+    public class CommandPromptViewModel : ICommandShellViewModel
     {
         private const int CAPACITY = 200;
         private readonly Process _process;
-        private readonly Queue<string> _stdOut = new Queue<string>(CAPACITY); 
+        private readonly CircularBuffer _stdOut = new CircularBuffer(CAPACITY); 
         public CommandPromptViewModel(string folderPath)
         {
             FolderPath = folderPath;
@@ -34,41 +32,62 @@ namespace FileAdmiral.Engine.ViewModels
                     WorkingDirectory = folderPath
                 }
             };
-            _process.OutputDataReceived += ProcessOnOutputDataReceived;
             _process.Start();
-            _process.BeginOutputReadLine();
-
-            UpdatePrompt();
-
-
-        }
-        private void UpdatePrompt()
-        {
-            _process.CancelOutputRead();
-            SendCommand("set FA_CD=%CD%");
-            _process.BeginOutputReadLine();
-
-
-
-            var envars = _process.TryReadEnvironmentVariables();
-            if(envars!=null)
-                Prompt = envars["FA_CD"] + ">";
+            _process.BeginErrorReadLine();
+            SendCommand("set PROMPT=" + PROMPT_MAGIC +"$P$G::");
+            Task.Run(() => Read());
 
         }
-        private void ProcessOnOutputDataReceived(object sender, DataReceivedEventArgs e)
-        {
-            string data = e.Data;
-            UpdatePrompt();
-            
 
-            if (_stdOut.Count == CAPACITY)
+        
+
+        private const string PROMPT_MAGIC = "PROMPT::";
+
+        private void Read()
+        {
+            var buffer = new StringBuilder();
+            while (!_process.HasExited)
             {
-                _stdOut.Dequeue();
-            }
-            _stdOut.Enqueue(data);
-            if (PropertyChanged != null)
-            {
-                PropertyChanged(this, new PropertyChangedEventArgs("StandardOut"));
+                int readOut = _process.StandardOutput.Read();
+                if (readOut == -1)
+                {
+                    throw new InvalidOperationException("unexpected end of stdout");
+                    break;
+                }
+                char readChar = (char) readOut;
+
+                
+                if (readChar == '\n')
+                {
+                    string bufferString = buffer.ToString().Trim();
+                    if (!bufferString.Contains(PROMPT_MAGIC))
+                    {
+                        _stdOut.AddLine(bufferString);
+                        OnPropertyChanged("StandardOut");
+                    }
+                    buffer.Clear();
+                }
+                else if (readChar == '\r')
+                {
+
+                }
+                else if (readChar != '\0')
+                {
+                    buffer.Append(readChar);
+                    string lastLineClean = buffer.ToString().Trim();
+                    int indexOfPathMagic = lastLineClean.IndexOf(PROMPT_MAGIC, StringComparison.CurrentCulture);
+                    if (indexOfPathMagic > -1)
+                    {
+                        int indexOfPathMagicEnd = lastLineClean.IndexOf(">::", StringComparison.CurrentCulture);
+                        if (indexOfPathMagicEnd > -1)
+                        {
+                            int start = indexOfPathMagic + PROMPT_MAGIC.Length;
+                            int end = lastLineClean.LastIndexOf("::", StringComparison.CurrentCulture);
+                            Prompt = lastLineClean.Substring(start, end - start);
+                            FolderPath = Prompt.Substring(0, Prompt.Length - 1);
+                        }
+                    }
+                }
             }
         }
 
@@ -82,35 +101,23 @@ namespace FileAdmiral.Engine.ViewModels
                 if (_prompt != value)
                 {
                     _prompt = value;
-                    if (PropertyChanged != null)
-                    {
-                        PropertyChanged(this, new PropertyChangedEventArgs("Prompt"));
-                    }
+                    OnPropertyChanged("Prompt");
                 }
             }
         }
 
-        private string _lastCommand;
-        private bool _lastInputWasMine;
-        public void SendCommand(string command, bool store = true)
+        public void SendCommand(string command)
         {
-            if (store)
-            {
-                _lastCommand = command;
-            }
-            _lastInputWasMine = true;
             _process.StandardInput.WriteLine(command);
         }
 
-        private const string SETPATH = "set FA_CD=%CD%";
         public string FolderPath { get; private set; }
-
-        //private StringBuilder _stdOut = new StringBuilder();
 
         public string StandardOut
         {
-            get { return string.Join("\n",_stdOut); }
+            get { return _stdOut.ToString(); }
         }
+
         public event PropertyChangedEventHandler PropertyChanged;
 
         [NotifyPropertyChangedInvocator]
@@ -118,6 +125,22 @@ namespace FileAdmiral.Engine.ViewModels
         {
             PropertyChangedEventHandler handler = PropertyChanged;
             if (handler != null) handler(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        public void Dispose()
+        {
+            if (_process != null && !_process.HasExited)
+            {
+                _process.Kill();
+            }
+        }
+
+        ~CommandPromptViewModel()
+        {
+            Dispose();
         }
     }
 }

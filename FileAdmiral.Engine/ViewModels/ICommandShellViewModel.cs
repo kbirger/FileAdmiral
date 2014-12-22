@@ -1,12 +1,19 @@
 ﻿using System;
+using System.ComponentModel;
+
 namespace FileAdmiral.Engine.ViewModels
 {
-    interface ICommandShellViewModel
+    public interface ICommandShellViewModel : INotifyPropertyChanged, IDisposable
     {
-        string FolderPath { get; }
         string Prompt { get; }
-        event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
-        void SendCommand(string command, bool store = true);
+        string FolderPath { get; }
         string StandardOut { get; }
+        void SendCommand(string command);
+        event PropertyChangedEventHandler PropertyChanged;
+
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        void Dispose();
     }
 }

@@ -1,4 +1,5 @@
-﻿using FileAdmiral.Engine.Annotations;
+﻿using System.Management.Automation.Runspaces;
+using FileAdmiral.Engine.Annotations;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -10,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace FileAdmiral.Engine.ViewModels
 {
-    public class PowerShellViewModel : ICommandShellViewModel, INotifyPropertyChanged
+    public class PowerShellViewModel : ICommandShellViewModel
     {
         private PowerShell _shell;
         private CircularBuffer _buffer = new CircularBuffer(200);
@@ -64,12 +65,34 @@ namespace FileAdmiral.Engine.ViewModels
             }
         }
 
+
         public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
 
-        public void SendCommand(string command, bool store = true)
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        void ICommandShellViewModel.Dispose()
         {
-            _shell.AddScript(command).AddCommand("Out-String");
+            throw new NotImplementedException();
+        }
+
+        public void SendCommand(string command)
+        {
+            using (var pipeline = _shell.Runspace.CreatePipeline("Out-String"))
+            {
+                pipeline.Commands.AddScript(command);
+                //pipeline.Commands[0].MergeMyResults(PipelineResultTypes.Error, PipelineResultTypes.Output);
+                //var res = pipeline.Invoke();
+                //_buffer.AddLines(res.SelectMany(r => r.Split(new string[] { "\r\n"}, StringSplitOptions.None))););
+            }
+            _shell.Commands.Clear();
+            _shell.Streams.ClearStreams();
+            _shell.AddScript(command);
+            _shell.Commands.Commands[0].MergeMyResults(PipelineResultTypes.Error, PipelineResultTypes.Output);
+            _shell.AddCommand("Out-String");
+            
             _buffer.AddLines(_shell.Invoke<string>().SelectMany(r => r.Split(new string[] { "\r\n"}, StringSplitOptions.None)));
+            //_buffer.AddLines(_shell.Streams.Error.ReadAll().Select(e => e.Exception.Message));
             OnPropertyChanged("StandardOut");
             Prompt = GetPWD() + ">";
         }
@@ -85,6 +108,19 @@ namespace FileAdmiral.Engine.ViewModels
         {
             PropertyChangedEventHandler handler = PropertyChanged;
             if (handler != null) handler(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
+        public void Dispose()
+        {
+            _shell.Dispose();
+        }
+
+        ~PowerShellViewModel()
+        {
+            Dispose();
         }
     }
 }
