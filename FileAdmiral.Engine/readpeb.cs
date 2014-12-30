@@ -553,7 +553,7 @@ namespace ReadEnvSample
             return true;
         }
 
-        static class WindowsApi
+        public static class WindowsApi
         {
             [StructLayout(LayoutKind.Sequential, Pack = 1)]
             public struct PROCESS_BASIC_INFORMATION

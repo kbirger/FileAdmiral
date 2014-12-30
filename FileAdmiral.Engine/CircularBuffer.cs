@@ -8,8 +8,8 @@ namespace FileAdmiral.Engine
 {
     public class CircularBuffer : IEnumerable<string>
     {
-        private Queue<string> _queue;
-        private int _capacity;
+        private readonly Queue<string> _queue;
+        private readonly int _capacity;
         public CircularBuffer(int capacity)
         {
             _queue = new Queue<string>(capacity);
@@ -20,17 +20,27 @@ namespace FileAdmiral.Engine
         {
             foreach(string line in lines)
             {
-                AddLine(line);
+                AddLine(line,false);
             }
+            Changed.Raise(this, EventArgs.Empty);
         }
 
         public void AddLine(string line)
         {
-            if(_queue.Count == _capacity)
+            AddLine(line, true);
+        }
+
+        private void AddLine(string line, bool notify)
+        {
+            if (_queue.Count == _capacity)
             {
                 _queue.Dequeue();
             }
             _queue.Enqueue(line);
+            if (notify)
+            {
+                Changed.Raise(this, EventArgs.Empty);
+            }
         }
 
         public IEnumerator<string> GetEnumerator()
@@ -42,6 +52,8 @@ namespace FileAdmiral.Engine
         {
             return _queue.GetEnumerator();
         }
+
+        public event EventHandler Changed;
 
         /// <summary>
         /// Returns a string that represents the current object.

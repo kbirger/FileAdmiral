@@ -34,6 +34,7 @@ namespace FileAdmiral.Engine.ViewModels
             };
             _process.Start();
             _process.BeginErrorReadLine();
+            // 'mode con:cols=920 lines=40'
             SendCommand("set PROMPT=" + PROMPT_MAGIC +"$P$G::");
             Task.Run(() => Read());
 

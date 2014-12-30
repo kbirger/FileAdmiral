@@ -1,5 +1,6 @@
 ﻿<Window x:Class="FileAdmiral.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:wf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms" 
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="MainWindow" Height="350" Width="525">
     <Window.Resources>
@@ -17,11 +18,35 @@
         </Style>
     </Window.Resources>
     <Grid>
-        <DockPanel>
-            <DockPanel DockPanel.Dock="Bottom">
-                <TextBlock DockPanel.Dock="Left" x:Name="PromptDisplay" Text="{Binding Prompt, Mode=OneWay}" Focusable="False" IsHitTestVisible="False"></TextBlock>
-                <TextBox x:Name="CommandInput" KeyUp="CommandInput_OnKeyUp"></TextBox>
+        <Grid.RowDefinitions>
+            <RowDefinition />
+            <RowDefinition Height="5" />
+            <RowDefinition />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition />
+            <ColumnDefinition Width="5" />
+            <ColumnDefinition />
+        </Grid.ColumnDefinitions>
+        <ContentControl>
+            <ListView ItemsSource="{Binding LeftItems.Items}" x:Name="lvLeftItems">
+                <ListView.InputBindings>
+                    <KeyBinding Gesture="Enter"  Command="{Binding LeftItems.ChangeDirectoryCommand}" CommandParameter="{Binding ElementName=lvLeftItems, Path=SelectedItem}"/>
+                </ListView.InputBindings>
+            </ListView>
+        </ContentControl>
+        <GridSplitter Grid.RowSpan="1" Grid.Column="1" VerticalAlignment="Stretch" HorizontalAlignment="Center" Background="Red" Width="5" />
 
+        <ContentControl Grid.Column="2">
+            <ListBox ItemsSource="{Binding RightItems.Items}">
+                <ListBox.CommandBindings><CommandBinding ></CommandBinding></ListBox.CommandBindings>
+            </ListBox>
+        </ContentControl>
+        <GridSplitter Grid.ColumnSpan="3" Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Stretch" Background="Red" Height="5" />
+        <DockPanel Grid.ColumnSpan="3" Grid.Row="2">
+            <DockPanel DockPanel.Dock="Bottom">
+                <TextBlock DockPanel.Dock="Left" x:Name="PromptDisplay" Text="{Binding CommandShell.Prompt, Mode=OneWay}" Focusable="False" IsHitTestVisible="False"></TextBlock>
+                <TextBox x:Name="CommandInput" KeyUp="CommandInput_OnKeyUp"></TextBox>
             </DockPanel>
 
             <TextBox 
@@ -31,8 +56,13 @@
                 VerticalScrollBarVisibility="Auto" 
                 TextWrapping="Wrap" 
                 Style="{StaticResource OutputStyle}" 
-                Text="{Binding StandardOut, Mode=OneWay}" 
+                Text="{Binding CommandShell.StandardOut, Mode=OneWay}" 
                 TextChanged="TextBoxBase_OnTextChanged"></TextBox>
+            <!--<WindowsFormsHost>
+                <wf:Panel x:Name="hostPanel">
+
+                </wf:Panel>
+            </WindowsFormsHost>-->
         </DockPanel>
     </Grid>
 </Window>
