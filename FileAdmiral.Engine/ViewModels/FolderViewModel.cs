@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Globalization;
 using System.Linq;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -38,9 +39,9 @@ namespace FileAdmiral.Engine.ViewModels
                 //        }
                 //        partEnd = i - 1;
                 //    }
-                    
+
                 //}
-                _pathParts = new Stack<string>(path.Split(new [] {'\\'}, StringSplitOptions.RemoveEmptyEntries));
+                _pathParts = new Stack<string>(path.Split(new[] { '\\' }, StringSplitOptions.RemoveEmptyEntries));
             }
             public bool IsRoot
             {
@@ -146,13 +147,22 @@ namespace FileAdmiral.Engine.ViewModels
             _items.Clear();
             var directory = new DirectoryInfo(CurrentPath);
             var directoryNavigator = new PathStack(CurrentPath);
-            if(!directoryNavigator.IsRoot)
+            var temp = new SortedList<DirectorySortKey, FolderItem>();
+
+            if (!directoryNavigator.IsRoot)
             {
                 _items.Add(new FolderItem("..", directoryNavigator.GoUp(), false));
             }
+
+            // Inefficient, but negligible for small datasets. Possibly do this in one iteration instead of 2 later
             foreach (var item in directory.EnumerateFileSystemInfos())
             {
-                _items.Add(new FolderItem(item.Name, item.FullName, !item.Attributes.HasFlag(FileAttributes.Directory)));
+                temp.Add(new DirectorySortKey(item), new FolderItem(item.Name, item.FullName, !item.Attributes.HasFlag(FileAttributes.Directory)));
+                //_items.Add(new FolderItem(item.Name, item.FullName, !item.Attributes.HasFlag(FileAttributes.Directory)));
+            }
+            foreach (var item in temp)
+            {
+                _items.Add(item.Value);
             }
         }
 
@@ -169,6 +179,46 @@ namespace FileAdmiral.Engine.ViewModels
         public void Initialize(string startPath)
         {
             CurrentPath = startPath;
+        }
+
+        private sealed class DirectorySortKey : IComparable
+        {
+            public DirectorySortKey(FileSystemInfo item)
+                : this(item.Name, item.Attributes.HasFlag(FileAttributes.Directory))
+            {
+
+            }
+            public DirectorySortKey(string name, bool dir)
+            {
+                Name = name;
+                IsDirectory = dir;
+            }
+
+            public bool IsDirectory { get; set; }
+
+            public string Name { get; set; }
+
+            /// <summary>
+            /// Compares the current instance with another object of the same type and returns an integer that indicates whether the current instance precedes, follows, or occurs in the same position in the sort order as the other object.
+            /// </summary>
+            /// <returns>
+            /// A value that indicates the relative order of the objects being compared. The return value has these meanings: Value Meaning Less than zero This instance precedes <paramref name="obj"/> in the sort order. Zero This instance occurs in the same position in the sort order as <paramref name="obj"/>. Greater than zero This instance follows <paramref name="obj"/> in the sort order. 
+            /// </returns>
+            /// <param name="obj">An object to compare with this instance. </param><exception cref="T:System.ArgumentException"><paramref name="obj"/> is not the same type as this instance. </exception>
+            public int CompareTo(object obj)
+            {
+                var other = (DirectorySortKey)obj;
+
+                if (IsDirectory && !other.IsDirectory)
+                {
+                    return -1;
+                }
+                if (other.IsDirectory && !IsDirectory)
+                {
+                    return 1;
+                }
+                return string.Compare(Name, other.Name, StringComparison.CurrentCulture);
+            }
         }
     }
 }

@@ -1,0 +1,31 @@
+﻿<UserControl x:Class="FileAdmiral.Views.MainView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             d:DesignHeight="300" d:DesignWidth="300">
+    
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition />
+            <RowDefinition Height="5" />
+            <RowDefinition />
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition />
+            <ColumnDefinition Width="5" />
+            <ColumnDefinition />
+        </Grid.ColumnDefinitions>
+        <ContentControl x:Name="LeftItemContainer">
+
+        </ContentControl>
+        <GridSplitter Grid.RowSpan="1" Grid.Column="1" VerticalAlignment="Stretch" HorizontalAlignment="Center" Background="Red" Width="5" />
+
+        <ContentControl Grid.Column="2" x:Name="RightItemContainer">
+
+        </ContentControl>
+        <GridSplitter Grid.ColumnSpan="3" Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Stretch" Background="Red" Height="5" />
+        <ContentControl x:Name="CommandShellContainer" Grid.ColumnSpan="3" Grid.Row="2"/>
+    </Grid>
+</UserControl>
