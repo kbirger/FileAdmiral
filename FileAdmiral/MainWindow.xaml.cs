@@ -60,7 +60,7 @@ namespace FileAdmiral
                 {
                     var fact = _kernel.Get<IFileSystemViewModelFactory>();
                     fact.Register(typeof(FolderViewModel), (s) => System.Text.RegularExpressions.Regex.IsMatch(s, "(^[A-Z]:)|(file:///)"));
-                    var v = fact.CreateViewModel("C:\\");
+                    //var v = fact.CreateViewModel("C:\\");
                 }
                 catch (Exception ex)
                 {
