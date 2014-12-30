@@ -17,13 +17,12 @@ namespace FileAdmiral.Engine.ViewModels
         private DelegateCommand _deleteItemCommand;
         private DelegateCommand _addItemCommand;
 
-        public FolderViewModel(string startPath)
+        public FolderViewModel()
         {
             _readOnlyItems = new ReadOnlyObservableCollection<FolderItem>(_items);
             _changeDirectoryCommand = new DelegateCommand(o => CurrentPath = ((FolderItem)o).ResourcePath);
             _deleteItemCommand = new DelegateCommand(o => File.Delete(((FolderItem)o).ResourcePath));
             _addItemCommand = new DelegateCommand(o => File.Create(((FolderItem)o).ResourcePath));
-            CurrentPath = startPath;
         }
 
         public string ViewType
@@ -81,6 +80,12 @@ namespace FileAdmiral.Engine.ViewModels
         {
             PropertyChangedEventHandler handler = PropertyChanged;
             if (handler != null) handler(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+
+        public void Initialize(string startPath)
+        {
+            CurrentPath = startPath;
         }
     }
 }

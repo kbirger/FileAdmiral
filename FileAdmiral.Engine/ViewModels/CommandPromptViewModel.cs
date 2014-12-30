@@ -112,7 +112,7 @@ namespace FileAdmiral.Engine.ViewModels
             _process.StandardInput.WriteLine(command);
         }
 
-        public string FolderPath { get; private set; }
+        public string FolderPath { get; set; }
 
         public string StandardOut
         {

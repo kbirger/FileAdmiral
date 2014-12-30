@@ -20,60 +20,11 @@ using Ninject.Extensions.Factory;
 using Ninject.Extensions.Factory.Factory;
 using Ninject.Parameters;
 using Ninject.Extensions.Conventions;
+using FileAdmiral.IoC;
 
 namespace FileAdmiral
-{
-    public class UseFirstArgumentAsNameInstanceProvider : StandardInstanceProvider
-    {
-        protected override string GetName(System.Reflection.MethodInfo methodInfo, object[] arguments)
-        {
-            return (string)arguments[0];
-        }
-
-        /// <summary>
-        /// Gets the constructor arguments that shall be passed with the instance request.
-        /// </summary>
-        /// <param name="methodInfo">The method info of the method that was called on the factory.</param><param name="arguments">The arguments that were passed to the factory.</param>
-        /// <returns>
-        /// The constructor arguments that shall be passed with the instance request.
-        /// </returns>
-        protected override IConstructorArgument[] GetConstructorArguments(MethodInfo methodInfo, object[] arguments)
-        {
-            var v = base.GetConstructorArguments(methodInfo, arguments).Skip(1).ToArray();
-            return v;
-        }
-    }
-
-    public interface IFileSystemViewModelFactoryProvider
-    {
-        IFileSystemViewModel Get(string type, string startPath);
-    }
-    public interface IFileSystemViewModelFactory
-    {
-        IFileSystemViewModel CreateViewModel(string startPath);
-
-        void Register(Type type, Predicate<string> uriTestPredicate);
-    }
-
-    public class FileSystemViewModelFactory : IFileSystemViewModelFactory
-    {
-        private IFileSystemViewModelFactoryProvider _provider;
-        public FileSystemViewModelFactory(IFileSystemViewModelFactoryProvider provider)
-        {
-            _provider = provider;
-        }
-        private List<Tuple<Predicate<string>, string>> _registry = new List<Tuple<Predicate<string>, string>>(); 
-        public IFileSystemViewModel CreateViewModel(string startPath)
-        {
-            var typeToUse = _registry.Single(test => test.Item1(startPath)).Item2;
-            return _provider.Get(typeToUse, startPath);
-        }
-
-        public void Register(Type type, Predicate<string> uriTestPredicate)
-        {
-            _registry.Add(new Tuple<Predicate<string>, string>(uriTestPredicate, type.FullName));
-        }
-    }
+{   
+    
 
     /// <summary>
     /// Interaction logic for MainWindow.xaml
@@ -85,21 +36,12 @@ namespace FileAdmiral
         {
             InitializeComponent();
             //_kernel.Bind(x => x.FromThisAssembly().sel)
-            _kernel.Bind<IFileSystemViewModelFactory>().To<FileSystemViewModelFactory>();
+            _kernel.Bind<IFileSystemViewModelFactory>().To<FileSystemViewModelFactory>().InSingletonScope();
+            _kernel.Bind<IMainViewModel>().To<MainViewModel>().InSingletonScope();
             _kernel.Bind<ICommandShellViewModel>().To<PowerShellViewModel>();
-            _kernel.Bind<IFileSystemViewModelFactoryProvider>().ToFactory(() => new UseFirstArgumentAsNameInstanceProvider());
-            _kernel.Bind<IFileSystemViewModel>().To<FolderViewModel>().Named(typeof (FolderViewModel).FullName);
-            try
-            {
-                var fact = _kernel.Get<IFileSystemViewModelFactory>();
-                fact.Register(typeof(FolderViewModel), (s) => true);
-                var v = fact.CreateViewModel("C:\\");
-            }
-            catch (Exception ex)
-            {
-                
-                throw;
-            }
+            _kernel.Bind<IFileSystemViewModelProvider>().ToFactory(() => new UseFirstArgumentAsNameInstanceProvider());
+            _kernel.Bind<IFileSystemViewModel>().To<FolderViewModel>().InTransientScope().Named(typeof (FolderViewModel).FullName);
+            
             //_kernel.Bind<IFileSystemViewModel>().ToProvider<P>();
             //var v = _kernel.Get<IFileSystemViewModel>(x=>true, new Parameter("Path", "C:\\", false));
 
@@ -114,10 +56,25 @@ namespace FileAdmiral
             base.OnContentRendered(e);
             try
             {
+                try
+                {
+                    var fact = _kernel.Get<IFileSystemViewModelFactory>();
+                    fact.Register(typeof(FolderViewModel), (s) => System.Text.RegularExpressions.Regex.IsMatch(s, "(^[A-Z]:)|(file:///)"));
+                    var v = fact.CreateViewModel("C:\\");
+                }
+                catch (Exception ex)
+                {
+
+                    throw;
+                }
                 //PowerShellViewModel cpvm = new PowerShellViewModel("C:\\");
                 //ICommandShellViewModel cpvm = new PowerShellViewModel("C:\\");
                 //CommandPromptInteropViewModel cpvm = new CommandPromptInteropViewModel("C:\\", hostPanel.Handle, hostPanel.Width, hostPanel.Height);
-                DataContext = new MainViewModel();
+                var viewModel = _kernel.Get<IMainViewModel>();
+                viewModel.Initialize("C:\\", "C:\\Program Files");
+                DataContext = viewModel;
+
+
             }
             catch (Exception ex)
             {

@@ -7,14 +7,13 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using ReadEnvSample;
 
 namespace FileAdmiral.Engine.ViewModels
 {
     public class CommandPromptInteropViewModel : ICommandShellViewModel
     {
         public string Prompt { get; private set; }
-        public string FolderPath { get; private set; }
+        public string FolderPath { get; set; }
         public string StandardOut { get; private set; }
         
         [DllImport("User32", CharSet = CharSet.Auto, ExactSpelling = true)]

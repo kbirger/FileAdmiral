@@ -9,5 +9,7 @@ namespace FileAdmiral.Engine.ViewModels
         string CurrentPath { get; set; }
         ReadOnlyObservableCollection<FolderItem> Items { get; }
         ICommand ChangeDirectoryCommand { get; }
+
+        void Initialize(string startPath);
     }
 }

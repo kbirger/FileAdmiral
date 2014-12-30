@@ -6,15 +6,25 @@ using System.Threading.Tasks;
 
 namespace FileAdmiral.Engine.ViewModels
 {
-    public class MainViewModel
+    public class MainViewModel : IMainViewModel
     {
-        private ICommandShellViewModel _commandShell = new PowerShellViewModel("C:\\");
-        private FolderViewModel _leftItems = new FolderViewModel("C:\\");
-        private FolderViewModel _rightItems = new FolderViewModel("C:\\");
+        private ICommandShellViewModel _commandShell;
+        private IFileSystemViewModelFactory _viewModelFactory;
+        private IFileSystemViewModel _leftItems;
+        private IFileSystemViewModel _rightItems;
 
-        public MainViewModel()
+        public MainViewModel(IFileSystemViewModelFactory viewModelFactory, ICommandShellViewModel commandShellViewModel)
         {
+            _viewModelFactory = viewModelFactory;
+            _commandShell = commandShellViewModel;
             
+        }
+
+        public void Initialize(string leftUri, string rightUri)
+        {
+            _leftItems = _viewModelFactory.CreateViewModel(leftUri);
+            _rightItems = _viewModelFactory.CreateViewModel(rightUri);
+            _commandShell.FolderPath = _leftItems.CurrentPath;
         }
 
         public ICommandShellViewModel CommandShell
@@ -22,12 +32,12 @@ namespace FileAdmiral.Engine.ViewModels
             get { return _commandShell; }
         }
 
-        public FolderViewModel LeftItems
+        public IFileSystemViewModel LeftItems
         {
             get { return _leftItems; }
         }
 
-        public FolderViewModel RightItems
+        public IFileSystemViewModel RightItems
         {
             get { return _rightItems; }
         }

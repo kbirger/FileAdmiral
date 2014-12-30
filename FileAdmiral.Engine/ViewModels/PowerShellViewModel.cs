@@ -19,16 +19,16 @@ namespace FileAdmiral.Engine.ViewModels
         private CircularBuffer _buffer = new CircularBuffer(200);
         private string _folderPath;
         private PSHost _psHost;
-        public PowerShellViewModel(string folderPath)
+        public PowerShellViewModel()
         {
             _buffer.Changed += (sender, args) => OnPropertyChanged("StandardOut");
             _shell = PowerShell.Create();
             _psHost = new MyPSHost(_buffer);
             _shell.Runspace = RunspaceFactory.CreateRunspace(_psHost);
             _shell.Runspace.Open();
-            FolderPath = folderPath;
 
         }
+
         public string FolderPath
         {
             get
