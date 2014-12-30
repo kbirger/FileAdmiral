@@ -17,7 +17,30 @@ namespace FileAdmiral.Engine.ViewModels
             private Stack<string> _pathParts;
             public PathStack(string path)
             {
-                _pathParts = new Stack<string>(path.Split(new [] {'\\'}, StringSplitOptions.RemoveEmptyEntries).Reverse());
+                //_pathParts = new Stack<string>();
+                //// get rid of trailing slash for now
+
+                //path = path.TrimEnd('\\');
+
+                //int partEnd = path.Length - 1;
+                //for (int i = path.Length - 1; i >= 0; i--)
+                //{
+                //    var c = path[i];
+                //    if (partEnd == -1)
+                //    {
+                //        partEnd = i;
+                //    }
+                //    if (c == '\\')
+                //    {
+                //        if (partEnd > i)
+                //        {
+                //            _pathParts.Push(path.Substring(i + 1, partEnd - i));
+                //        }
+                //        partEnd = i - 1;
+                //    }
+                    
+                //}
+                _pathParts = new Stack<string>(path.Split(new [] {'\\'}, StringSplitOptions.RemoveEmptyEntries));
             }
             public bool IsRoot
             {
@@ -38,7 +61,16 @@ namespace FileAdmiral.Engine.ViewModels
             }
             public override string ToString()
             {
-                return string.Join("\\", _pathParts);
+                if (!IsRoot)
+                {
+                    return string.Join("\\", _pathParts.Reverse());
+                }
+                else
+                {
+                    // C# will resolve "C:" as a relative path, which is not what we want.
+                    // todo: UNC support will break this logic, but that's a problem for Future Me.
+                    return _pathParts.Peek() + "\\";
+                }
             }
         }
         private string _viewType;
@@ -48,6 +80,7 @@ namespace FileAdmiral.Engine.ViewModels
         private DelegateCommand _changeDirectoryCommand;
         private DelegateCommand _deleteItemCommand;
         private DelegateCommand _addItemCommand;
+        private DelegateCommand _goUpCommand;
 
         public FolderViewModel()
         {
@@ -55,6 +88,7 @@ namespace FileAdmiral.Engine.ViewModels
             _changeDirectoryCommand = new DelegateCommand(o => CurrentPath = ((FolderItem)o).ResourcePath);
             _deleteItemCommand = new DelegateCommand(o => File.Delete(((FolderItem)o).ResourcePath));
             _addItemCommand = new DelegateCommand(o => File.Create(((FolderItem)o).ResourcePath));
+            _goUpCommand = new DelegateCommand(o => CurrentPath = new PathStack(CurrentPath).GoUp(), o => !(new PathStack(CurrentPath).IsRoot));
         }
 
         public string ViewType
@@ -85,6 +119,7 @@ namespace FileAdmiral.Engine.ViewModels
 
                     // expand env vars
                     _currentPath = new DirectoryInfo(value).FullName;
+                    _goUpCommand.RaiseCanExecuteChanged();
                     OnPropertyChanged("CurrentPath");
                     LoadItems();
                 }
@@ -100,7 +135,11 @@ namespace FileAdmiral.Engine.ViewModels
         {
             get { return _changeDirectoryCommand; }
         }
-        
+
+        public ICommand GoUpCommand
+        {
+            get { return _goUpCommand; }
+        }
 
         private void LoadItems()
         {

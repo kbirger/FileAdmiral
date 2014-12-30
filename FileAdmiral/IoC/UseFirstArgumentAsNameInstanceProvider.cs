@@ -1,4 +1,6 @@
-﻿using Ninject.Extensions.Factory;
+﻿using System.Windows.Annotations;
+using Ninject.Extensions.Factory;
+using Ninject.Extensions.Factory.Factory;
 using Ninject.Parameters;
 using System;
 using System.Collections.Generic;

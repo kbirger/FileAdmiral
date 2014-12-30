@@ -61,6 +61,10 @@
     <Compile Include="ViewModels\IMainViewModel.cs" />
     <Compile Include="ViewModels\MainViewModel.cs" />
     <Compile Include="ViewModels\PowerShellViewModel.cs" />
+    <Compile Include="Views\ICommandShellView.cs" />
+    <Compile Include="Views\IFileSystemView.cs" />
+    <Compile Include="Views\IMainView.cs" />
+    <Compile Include="Views\IView.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

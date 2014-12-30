@@ -14,6 +14,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using FileAdmiral.Engine.ViewModels;
+using FileAdmiral.Engine.Views;
 using Ninject;
 using Ninject.Activation;
 using Ninject.Extensions.Factory;
@@ -31,20 +32,23 @@ namespace FileAdmiral
     /// </summary>
     public partial class MainWindow : Window
     {
-        private IKernel _kernel = new StandardKernel();
+        private IKernel _kernel = new StandardKernel(new CoreBindingLoader());
         public MainWindow()
         {
             InitializeComponent();
+
+            // todo: move this into separate class
+            var fact = _kernel.Get<IFileSystemViewModelFactory>();
+            fact.Register(typeof(FolderViewModel), (s) => System.Text.RegularExpressions.Regex.IsMatch(s, "(^[A-Z]:)|(file:///)"));
             //_kernel.Bind(x => x.FromThisAssembly().sel)
-            _kernel.Bind<IFileSystemViewModelFactory>().To<FileSystemViewModelFactory>().InSingletonScope();
-            _kernel.Bind<IMainViewModel>().To<MainViewModel>().InSingletonScope();
-            _kernel.Bind<ICommandShellViewModel>().To<PowerShellViewModel>();
-            _kernel.Bind<IFileSystemViewModelProvider>().ToFactory(() => new UseFirstArgumentAsNameInstanceProvider());
-            _kernel.Bind<IFileSystemViewModel>().To<FolderViewModel>().InTransientScope().Named(typeof (FolderViewModel).FullName);
             
+
             //_kernel.Bind<IFileSystemViewModel>().ToProvider<P>();
             //var v = _kernel.Get<IFileSystemViewModel>(x=>true, new Parameter("Path", "C:\\", false));
-
+            var viewModel = _kernel.Get<IMainViewModel>();
+            viewModel.Initialize("C:\\", "C:\\Program Files");
+            DataContext = viewModel;
+            Content = _kernel.Get<IViewFactory>().CreateView<IMainView>();
         }
 
         /// <summary>
@@ -58,8 +62,7 @@ namespace FileAdmiral
             {
                 try
                 {
-                    var fact = _kernel.Get<IFileSystemViewModelFactory>();
-                    fact.Register(typeof(FolderViewModel), (s) => System.Text.RegularExpressions.Regex.IsMatch(s, "(^[A-Z]:)|(file:///)"));
+                    
                     //var v = fact.CreateViewModel("C:\\");
                 }
                 catch (Exception ex)
@@ -70,9 +73,7 @@ namespace FileAdmiral
                 //PowerShellViewModel cpvm = new PowerShellViewModel("C:\\");
                 //ICommandShellViewModel cpvm = new PowerShellViewModel("C:\\");
                 //CommandPromptInteropViewModel cpvm = new CommandPromptInteropViewModel("C:\\", hostPanel.Handle, hostPanel.Width, hostPanel.Height);
-                var viewModel = _kernel.Get<IMainViewModel>();
-                viewModel.Initialize("C:\\", "C:\\Program Files");
-                DataContext = viewModel;
+                
 
 
             }
@@ -83,21 +84,6 @@ namespace FileAdmiral
             }
         }
 
-        private void CommandInput_OnKeyUp(object sender, KeyEventArgs e)
-        {
-            if (e.Key == Key.Return)
-            {
-                ((MainViewModel)DataContext).CommandShell.SendCommand(CommandInput.Text);
-                CommandInput.Text = "";
-            }
-        }
-
-        private void TextBoxBase_OnTextChanged(object sender, TextChangedEventArgs e)
-        {
-            var textBox = ((TextBox)sender);
-            textBox.CaretIndex = textBox.Text.Length;
-            textBox.ScrollToEnd();
-            //CommandInput.Padding = new Thickness(PromptDisplay.ActualWidth + 4, CommandInput.Padding.Top, CommandInput.Padding.Right, CommandInput.Padding.Bottom);
-        }
+        
     }
 }
